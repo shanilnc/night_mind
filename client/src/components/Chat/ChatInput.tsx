@@ -1,19 +1,24 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Heart } from 'lucide-react';
+import { useState, useRef, useEffect } from "react";
+import { Send, Mic, Heart } from "lucide-react";
 
 interface ChatInputProps {
-  onSendMessage: (message: string, mood?: 'anxious' | 'calm' | 'confused' | 'hopeful') => void;
+  onSendMessage: (
+    message: string,
+    mood?: "anxious" | "calm" | "confused" | "hopeful"
+  ) => void;
   isTyping: boolean;
 }
 
 export function ChatInput({ onSendMessage, isTyping }: ChatInputProps) {
-  const [message, setMessage] = useState('');
-  const [selectedMood, setSelectedMood] = useState<'anxious' | 'calm' | 'confused' | 'hopeful' | null>(null);
+  const [message, setMessage] = useState("");
+  const [selectedMood, setSelectedMood] = useState<
+    "anxious" | "calm" | "confused" | "hopeful" | null
+  >(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   }, [message]);
@@ -22,38 +27,46 @@ export function ChatInput({ onSendMessage, isTyping }: ChatInputProps) {
     e.preventDefault();
     if (message.trim() && !isTyping) {
       onSendMessage(message.trim(), selectedMood || undefined);
-      setMessage('');
+      setMessage("");
       setSelectedMood(null);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
     }
   };
 
   const moods = [
-    { value: 'anxious' as const, label: '😰 Anxious', color: 'text-red-400' },
-    { value: 'confused' as const, label: '🤔 Confused', color: 'text-yellow-400' },
-    { value: 'hopeful' as const, label: '🌟 Hopeful', color: 'text-green-400' },
-    { value: 'calm' as const, label: '😌 Calm', color: 'text-blue-400' },
+    { value: "anxious" as const, label: "😰 Anxious", color: "text-red-400" },
+    {
+      value: "confused" as const,
+      label: "🤔 Confused",
+      color: "text-yellow-400",
+    },
+    { value: "hopeful" as const, label: "🌟 Hopeful", color: "text-green-400" },
+    { value: "calm" as const, label: "😌 Calm", color: "text-blue-400" },
   ];
 
   return (
     <div className="border-t border-slate-700 bg-slate-800/95 backdrop-blur-sm p-4">
       {/* Mood Selector */}
       <div className="flex gap-2 mb-3 flex-wrap">
-        <span className="text-xs text-slate-400 mr-2 self-center">How are you feeling?</span>
-        {moods.map(mood => (
+        <span className="text-xs text-slate-400 mr-2 self-center">
+          How are you feeling?
+        </span>
+        {moods.map((mood) => (
           <button
             key={mood.value}
-            onClick={() => setSelectedMood(selectedMood === mood.value ? null : mood.value)}
+            onClick={() =>
+              setSelectedMood(selectedMood === mood.value ? null : mood.value)
+            }
             className={`text-xs px-3 py-1 rounded-full transition-all ${
               selectedMood === mood.value
-                ? 'bg-slate-600 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                ? "bg-slate-600 text-white"
+                : "bg-slate-700 text-slate-300 hover:bg-slate-600"
             }`}
           >
             {mood.label}
@@ -81,7 +94,7 @@ export function ChatInput({ onSendMessage, isTyping }: ChatInputProps) {
             <Mic size={18} />
           </button>
         </div>
-        
+
         <button
           type="submit"
           disabled={!message.trim() || isTyping}
@@ -94,10 +107,12 @@ export function ChatInput({ onSendMessage, isTyping }: ChatInputProps) {
           )}
         </button>
       </form>
-      
+
       <div className="flex items-center justify-center mt-3">
         <Heart size={14} className="text-slate-500 mr-2" />
-        <span className="text-xs text-slate-500">Your thoughts are safe here</span>
+        <span className="text-xs text-slate-500">
+          Your thoughts are safe here
+        </span>
       </div>
     </div>
   );

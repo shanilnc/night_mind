@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Conversation, Message } from '../types';
+import { Conversation, Message } from '../types.d';
 import { useLocalStorage } from './useLocalStorage';
 import { generateAIResponse } from '../utils/aiResponses';
 
@@ -90,8 +90,8 @@ export function useConversations() {
       'team', 'product', 'market', 'stress', 'worried', 'uncertain',
       'growth', 'revenue', 'funding', 'leadership', 'competition'
     ];
-    
-    return keywords.filter(keyword => 
+
+    return keywords.filter(keyword =>
       content.toLowerCase().includes(keyword.toLowerCase())
     );
   };

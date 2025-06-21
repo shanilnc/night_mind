@@ -1,4 +1,4 @@
-import { Message } from '../types';
+import { Message } from '../types.d';
 
 const responses = {
   anxiety: [
@@ -25,7 +25,7 @@ const responses = {
 
 export async function generateAIResponse(userMessage: string, conversationHistory: Message[]): Promise<string> {
   const lowerMessage = userMessage.toLowerCase();
-  
+
   // Analyze the user's message for context
   let category = 'general';
   if (lowerMessage.includes('anxious') || lowerMessage.includes('worried') || lowerMessage.includes('stress')) {
