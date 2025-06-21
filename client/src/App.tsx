@@ -1,7 +1,7 @@
 // client/src/App.tsx
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wind } from "lucide-react";
+import { Wind, Radio } from "lucide-react";
 import { Sidebar } from "./components/Layout/Sidebar";
 import { MobileNavigation } from "./components/Layout/MobileNavigation";
 import { ChatInterface } from "./components/Chat/ChatInterface";
@@ -9,6 +9,7 @@ import { JournalView } from "./components/Journal/JournalView";
 import { Dashboard } from "./components/Dashboard/Dashboard";
 import { WelcomeScreen } from "./components/UI/WelcomeScreen";
 import { BreathingAnimation } from "./components/UI/BreathingAnimationEnhanced2";
+import { VoiceChatOverlay } from "./components/UI/VoiceChatOverlay";
 import { useAppStore } from "./store/useAppstore";
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
   >("chat");
   const [showWelcome, setShowWelcome] = useState(!userProfile.name);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [showVoiceChat, setShowVoiceChat] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -126,73 +128,176 @@ function App() {
           transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
         />
 
-        {/* Enhanced Breathing Control Button */}
-        <motion.button
-          whileHover={{ scale: 1.1, rotate: 5 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setBreathing(!isBreathing)}
+        {/* Floating Action Buttons */}
+        <div
           className={`fixed ${
-            isMobile ? "bottom-24 right-4" : "bottom-8 right-8"
-          } z-40 w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-all group overflow-hidden ${
-            isBreathing
-              ? "bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 text-white"
-              : "bg-gradient-to-br from-slate-800 via-slate-700 to-slate-800 text-slate-300 hover:text-white border border-slate-600/50"
-          }`}
-          title={
-            isBreathing ? "Stop breathing exercise" : "Start breathing exercise"
-          }
+            isMobile
+              ? activeView === "chat"
+                ? "bottom-44 right-1 gap-1"
+                : "bottom-32 right-6"
+              : activeView === "chat"
+              ? "bottom-40 right-3"
+              : "bottom-24 right-8"
+          } z-40 flex flex-col gap-4`}
         >
-          {/* Animated Background */}
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"
-            animate={
+          {/* Breathing Exercise Button */}
+          <motion.button
+            whileHover={{ scale: 1.05, rotate: 3 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setBreathing(!isBreathing)}
+            className={`${
+              activeView === "chat" ? "w-12 h-12" : "w-14 h-14"
+            } rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm transition-all group overflow-hidden relative ${
               isBreathing
-                ? {
-                    scale: [1, 1.2, 1],
-                    opacity: [0.3, 0.6, 0.3],
-                  }
-                : {}
-            }
-            transition={{ duration: 2, repeat: Infinity }}
-          />
-
-          {/* Icon with enhanced animation */}
-          <motion.div
-            animate={
+                ? "bg-gradient-to-br from-emerald-400/90 via-teal-500/90 to-cyan-500/90 text-white shadow-emerald-500/25"
+                : "bg-slate-800/80 text-slate-300 hover:text-white border border-slate-600/30 hover:border-slate-500/50 hover:bg-slate-700/80"
+            }`}
+            title={
               isBreathing
-                ? {
-                    scale: [1, 1.1, 1],
-                    rotate: [0, 5, -5, 0],
-                  }
-                : {}
+                ? "Stop breathing exercise"
+                : "Start breathing exercise"
             }
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
           >
-            <Wind size={28} className="relative z-10 drop-shadow-lg" />
-          </motion.div>
+            {/* Subtle glow effect */}
+            <motion.div
+              className="absolute inset-0 rounded-full bg-gradient-to-br from-white/10 to-transparent"
+              animate={
+                isBreathing
+                  ? {
+                      opacity: [0.2, 0.4, 0.2],
+                    }
+                  : {}
+              }
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            />
 
-          {/* Pulse rings when active */}
-          {isBreathing && (
-            <>
-              <motion.div
-                className="absolute inset-0 rounded-full border-2 border-emerald-300/60"
-                animate={{
-                  scale: [1, 1.8],
-                  opacity: [0.6, 0],
-                }}
-                transition={{ duration: 2, repeat: Infinity }}
+            {/* Icon with subtle animation */}
+            <motion.div
+              animate={
+                isBreathing
+                  ? {
+                      scale: [1, 1.08, 1],
+                    }
+                  : {}
+              }
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              className="relative z-10"
+            >
+              <Wind
+                size={activeView === "chat" ? 20 : 24}
+                className="drop-shadow-sm"
               />
-              <motion.div
-                className="absolute inset-0 rounded-full border border-cyan-300/40"
-                animate={{
-                  scale: [1, 2.2],
-                  opacity: [0.4, 0],
-                }}
-                transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+            </motion.div>
+
+            {/* Elegant pulse rings when active */}
+            {isBreathing && (
+              <>
+                <motion.div
+                  className="absolute inset-0 rounded-full border border-emerald-200/50"
+                  animate={{
+                    scale: [1, 1.6],
+                    opacity: [0.5, 0],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeOut",
+                  }}
+                />
+                <motion.div
+                  className="absolute inset-0 rounded-full border border-cyan-200/30"
+                  animate={{
+                    scale: [1, 1.9],
+                    opacity: [0.3, 0],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    delay: 0.3,
+                    ease: "easeOut",
+                  }}
+                />
+              </>
+            )}
+          </motion.button>
+
+          {/* Voice Chat Button */}
+          <motion.button
+            whileHover={{ scale: 1.05, rotate: -3 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowVoiceChat(true)}
+            className={`${
+              activeView === "chat" ? "w-12 h-12" : "w-14 h-14"
+            } rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm transition-all group overflow-hidden relative ${
+              showVoiceChat
+                ? "bg-gradient-to-br from-purple-400/90 via-blue-500/90 to-indigo-500/90 text-white shadow-purple-500/25"
+                : "bg-slate-800/80 text-slate-300 hover:text-white border border-slate-600/30 hover:border-slate-500/50 hover:bg-slate-700/80"
+            }`}
+            title="Start voice chat"
+          >
+            {/* Subtle glow effect */}
+            <motion.div
+              className="absolute inset-0 rounded-full bg-gradient-to-br from-white/10 to-transparent"
+              animate={
+                showVoiceChat
+                  ? {
+                      opacity: [0.2, 0.4, 0.2],
+                    }
+                  : {}
+              }
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            />
+
+            {/* Icon with subtle animation */}
+            <motion.div
+              animate={
+                showVoiceChat
+                  ? {
+                      scale: [1, 1.08, 1],
+                    }
+                  : {}
+              }
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              className="relative z-10"
+            >
+              <Radio
+                size={activeView === "chat" ? 20 : 24}
+                className="drop-shadow-sm"
               />
-            </>
-          )}
-        </motion.button>
+            </motion.div>
+
+            {/* Elegant pulse rings when active */}
+            {showVoiceChat && (
+              <>
+                <motion.div
+                  className="absolute inset-0 rounded-full border border-purple-200/50"
+                  animate={{
+                    scale: [1, 1.6],
+                    opacity: [0.5, 0],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeOut",
+                  }}
+                />
+                <motion.div
+                  className="absolute inset-0 rounded-full border border-blue-200/30"
+                  animate={{
+                    scale: [1, 1.9],
+                    opacity: [0.3, 0],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    delay: 0.3,
+                    ease: "easeOut",
+                  }}
+                />
+              </>
+            )}
+          </motion.button>
+        </div>
       </main>
 
       {/* Mobile Navigation */}
@@ -207,6 +312,12 @@ function App() {
       <BreathingAnimation
         isActive={isBreathing}
         onComplete={() => setBreathing(false)}
+      />
+
+      {/* Voice Chat Overlay */}
+      <VoiceChatOverlay
+        isActive={showVoiceChat}
+        onClose={() => setShowVoiceChat(false)}
       />
     </div>
   );
