@@ -2,22 +2,26 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, MicOff, PhoneOff, Volume2, VolumeX } from "lucide-react";
 import AbstractBall from "./AudioVisualizer";
-import { useMicrophone } from "../../hooks/useMicrophone";
+import { useHumeEVI } from "../../hooks/useHumeEVI";
+import { HumeEVIProvider } from "./HumeEVIProvider";
 
 interface VoiceChatOverlayProps {
   isActive: boolean;
   onClose: () => void;
 }
 
-export function VoiceChatOverlay({ isActive, onClose }: VoiceChatOverlayProps) {
+function VoiceChatContent({ onClose }: { onClose: () => void }) {
   const {
-    volumeLevel,
-    isSessionActive,
-    toggleCall,
-    isPermissionGranted,
-    requestPermission,
-  } = useMicrophone();
-  const [isMuted, setIsMuted] = useState(false);
+    isConnected,
+    isListening,
+    messages,
+    connect,
+    disconnect,
+    error,
+    accessToken,
+    isLoading,
+  } = useHumeEVI();
+
   const [showStartScreen, setShowStartScreen] = useState(true);
   const [duration, setDuration] = useState(0);
   const [config, setConfig] = useState({
@@ -39,8 +43,8 @@ export function VoiceChatOverlay({ isActive, onClose }: VoiceChatOverlayProps) {
   });
 
   useEffect(() => {
-    let interval: number;
-    if (isSessionActive) {
+    let interval: NodeJS.Timeout;
+    if (isConnected) {
       interval = setInterval(() => {
         setDuration((prev) => prev + 1);
       }, 1000);
@@ -51,20 +55,20 @@ export function VoiceChatOverlay({ isActive, onClose }: VoiceChatOverlayProps) {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isSessionActive]);
+  }, [isConnected]);
 
-  // Update visualizer config based on audio input
+  // Update visualizer config based on connection status
   useEffect(() => {
-    if (isSessionActive && volumeLevel > 0) {
+    if (isConnected && isListening) {
       setConfig((prevConfig) => ({
         ...prevConfig,
         perlinTime: 100.0,
         perlinMorph: 25.0,
-        chromaRGBr: 7.5 + volumeLevel * 5,
-        chromaRGBg: 5.0 + volumeLevel * 3,
-        chromaRGBb: 7.0 + volumeLevel * 4,
+        chromaRGBr: 7.5 + 5,
+        chromaRGBg: 5.0 + 3,
+        chromaRGBb: 7.0 + 4,
       }));
-    } else if (isSessionActive) {
+    } else if (isConnected) {
       setConfig((prevConfig) => ({
         ...prevConfig,
         perlinTime: 25.0,
@@ -83,7 +87,7 @@ export function VoiceChatOverlay({ isActive, onClose }: VoiceChatOverlayProps) {
         chromaRGBb: 7.0,
       }));
     }
-  }, [isSessionActive, volumeLevel]);
+  }, [isConnected, isListening]);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -94,20 +98,18 @@ export function VoiceChatOverlay({ isActive, onClose }: VoiceChatOverlayProps) {
   };
 
   const handleStartChat = async () => {
-    if (!isPermissionGranted) {
-      const granted = await requestPermission();
-      if (!granted) {
-        alert("Microphone permission is required for voice chat");
-        return;
-      }
+    try {
+      setShowStartScreen(false);
+      await connect();
+    } catch (err) {
+      console.error("Failed to start voice chat:", err);
+      alert("Failed to start voice chat. Please try again.");
     }
-    setShowStartScreen(false);
-    toggleCall();
   };
 
   const handleEndChat = () => {
-    if (isSessionActive) {
-      toggleCall();
+    if (isConnected) {
+      disconnect();
     }
     setShowStartScreen(true);
     onClose();
@@ -124,7 +126,7 @@ export function VoiceChatOverlay({ isActive, onClose }: VoiceChatOverlayProps) {
         <h2 className="text-3xl font-light text-white mb-4">Voice Chat</h2>
         <p className="text-slate-300 leading-relaxed">
           Ready to start a voice conversation? I'll listen to your thoughts and
-          provide support through our audio chat.
+          provide support through our AI-powered voice chat.
         </p>
       </motion.div>
 
@@ -135,9 +137,10 @@ export function VoiceChatOverlay({ isActive, onClose }: VoiceChatOverlayProps) {
       >
         <button
           onClick={handleStartChat}
-          className="bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 text-white px-8 py-4 rounded-2xl text-lg font-medium shadow-lg hover:shadow-emerald-500/25 transition-all"
+          disabled={isLoading}
+          className="bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 text-white px-8 py-4 rounded-2xl text-lg font-medium shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Start Voice Chat
+          {isLoading ? "Connecting..." : "Start Voice Chat"}
         </button>
       </motion.div>
 
@@ -147,8 +150,18 @@ export function VoiceChatOverlay({ isActive, onClose }: VoiceChatOverlayProps) {
         transition={{ delay: 0.3 }}
         className="text-sm text-slate-400"
       >
-        <p>This will request access to your microphone</p>
+        <p>Powered by Hume AI - Advanced voice conversation</p>
       </motion.div>
+
+      {error && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mt-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg text-red-300 text-sm"
+        >
+          {error}
+        </motion.div>
+      )}
     </motion.div>
   );
 
@@ -162,10 +175,10 @@ export function VoiceChatOverlay({ isActive, onClose }: VoiceChatOverlayProps) {
       {/* Status Header */}
       <motion.div className="mb-6" initial={{ y: -20 }} animate={{ y: 0 }}>
         <div className="text-sm text-slate-300 mb-2">
-          {isSessionActive ? "Voice chat active" : "Voice chat paused"}
+          {isConnected ? "Voice chat active" : "Connecting..."}
         </div>
 
-        {isSessionActive && (
+        {isConnected && (
           <div className="text-emerald-400 text-lg font-mono">
             {formatDuration(duration)}
           </div>
@@ -173,38 +186,45 @@ export function VoiceChatOverlay({ isActive, onClose }: VoiceChatOverlayProps) {
       </motion.div>
 
       {/* Audio Visualizer */}
-      <div className="flex-1 flex items-center justify-center mb-6 w-full ">
+      <div className="flex-1 flex items-center justify-center mb-6 w-full">
         <AbstractBall {...config} />
       </div>
 
+      {/* Message Display */}
+      {messages.length > 0 && (
+        <div className="mb-6 max-h-32 overflow-y-auto">
+          <div className="text-sm text-slate-300">
+            {messages.slice(-2).map((msg, index) => (
+              <div key={index} className="mb-2">
+                <span className="font-medium">
+                  {msg.message.role === "user" ? "You" : "AI"}:
+                </span>
+                <span className="ml-2 text-slate-400">
+                  {msg.message.content.length > 50
+                    ? msg.message.content.substring(0, 50) + "..."
+                    : msg.message.content}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Controls */}
       <div className="flex items-center justify-center space-x-6 mb-6">
-        {/* Mute Toggle */}
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setIsMuted(!isMuted)}
-          className={`p-4 rounded-full transition-all ${
-            isMuted
-              ? "bg-red-500/20 text-red-400 border-2 border-red-400/50"
-              : "bg-slate-700/50 text-slate-300 border-2 border-slate-600/50 hover:bg-slate-600/50"
-          }`}
-        >
-          {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
-        </motion.button>
-
         {/* Record Toggle */}
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          onClick={toggleCall}
+          onClick={isConnected ? disconnect : connect}
+          disabled={isLoading}
           className={`p-6 rounded-full transition-all ${
-            isSessionActive
+            isConnected
               ? "bg-emerald-500/20 text-emerald-400 border-2 border-emerald-400/50"
               : "bg-slate-700/50 text-slate-300 border-2 border-slate-600/50 hover:bg-slate-600/50"
-          }`}
+          } disabled:opacity-50 disabled:cursor-not-allowed`}
         >
-          {isSessionActive ? <Mic size={32} /> : <MicOff size={32} />}
+          {isConnected ? <Mic size={32} /> : <MicOff size={32} />}
         </motion.button>
 
         {/* End Call */}
@@ -225,14 +245,43 @@ export function VoiceChatOverlay({ isActive, onClose }: VoiceChatOverlayProps) {
         transition={{ delay: 0.5 }}
         className="text-sm text-slate-400 mb-4"
       >
-        {!isSessionActive ? (
-          <p>Click the microphone to start talking</p>
+        {!isConnected ? (
+          <p>Connecting to voice chat...</p>
         ) : (
-          <p>I'm listening... The visualizer responds to your voice</p>
+          <p>I'm listening... Speak naturally and I'll respond</p>
         )}
       </motion.div>
     </motion.div>
   );
+
+  return showStartScreen ? renderStartScreen() : renderChatScreen();
+}
+
+export function VoiceChatOverlay({ isActive, onClose }: VoiceChatOverlayProps) {
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isActive) {
+      // Fetch access token when overlay becomes active
+      fetch(
+        `${
+          import.meta.env.VITE_API_URL || "http://localhost:3001/api"
+        }/hume/auth`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      )
+        .then((response) => response.json())
+        .then((data) => setAccessToken(data.accessToken))
+        .catch((err) => {
+          console.error("Failed to fetch access token:", err);
+          setAccessToken(null);
+        });
+    }
+  }, [isActive]);
 
   return (
     <AnimatePresence>
@@ -289,7 +338,9 @@ export function VoiceChatOverlay({ isActive, onClose }: VoiceChatOverlayProps) {
           </div>
 
           {/* Main Content */}
-          {showStartScreen ? renderStartScreen() : renderChatScreen()}
+          <HumeEVIProvider accessToken={accessToken}>
+            <VoiceChatContent onClose={onClose} />
+          </HumeEVIProvider>
         </motion.div>
       )}
     </AnimatePresence>

@@ -50,6 +50,7 @@ interface AppState {
   createConversation: () => void;
   addMessage: (content: string, mood?: Message["mood"]) => Promise<void>;
   endConversation: (anxietyLevelAfter?: number) => void;
+  setCurrentConversation: (conversation: Conversation | null) => void;
 
   updateUserProfile: (updates: Partial<UserProfile>) => void;
   trackMood: (entry: MoodEntry) => void;
@@ -217,6 +218,10 @@ export const useAppStore = create<AppState>()(
             currentConversation: null,
           });
         }
+      },
+
+      setCurrentConversation: (conversation) => {
+        set({ currentConversation: conversation });
       },
 
       updateUserProfile: (updates) => {

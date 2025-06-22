@@ -1,19 +1,26 @@
-// client/src/components/Chat/ChatInterface.tsx
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChatMessage } from "./ChatMessage";
-import { MessageCircle, Brain, Sparkles } from "lucide-react";
+import { MessageCircle, Brain, Sparkles, Plus } from "lucide-react";
 import { useAppStore } from "../../store/useAppstore";
 import { QuickActions } from "./QuickActions";
 import { ChatInput } from "./ChatInput";
+import { ConversationHistory } from "./ConversationHistory";
+import { Clock } from "lucide-react";
 
 export function ChatInterface() {
-  const { currentConversation, createConversation, userProfile, addMessage } =
-    useAppStore();
+  const {
+    currentConversation,
+    createConversation,
+    userProfile,
+    addMessage,
+    endConversation,
+  } = useAppStore();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showQuickActions, setShowQuickActions] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -32,6 +39,16 @@ export function ChatInterface() {
     setIsTyping(true);
     await addMessage(message, mood);
     setIsTyping(false);
+  };
+
+  const handleNewChat = () => {
+    if (currentConversation && currentConversation.messages.length > 0) {
+      // End current conversation if it has messages
+      endConversation();
+    }
+    // Create new conversation
+    createConversation();
+    setShowQuickActions(true);
   };
 
   const getGreeting = () => {
@@ -69,6 +86,31 @@ export function ChatInterface() {
                 I'm here to listen and support you
               </p>
             </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowHistory(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white rounded-lg transition-all border border-slate-700/50 hover:border-slate-600/50"
+              title="View chat history"
+            >
+              <Clock size={18} />
+              {/* <span className="text-sm font-medium">History</span> */}
+            </motion.button>
+
+            {/* New Chat Button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleNewChat}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white rounded-lg transition-all border border-slate-700/50 hover:border-slate-600/50"
+              title="Start new conversation"
+            >
+              <Plus size={18} />
+              {/* <span className="text-sm font-medium">New Chat</span> */}
+            </motion.button>
           </div>
         </div>
       </motion.div>
@@ -122,6 +164,11 @@ export function ChatInterface() {
           )}
         </AnimatePresence>
       </div>
+
+      <ConversationHistory
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+      />
 
       {/* Enhanced Input */}
       <ChatInput onSendMessage={handleSendMessage} isTyping={isTyping} />

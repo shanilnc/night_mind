@@ -2,6 +2,8 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const chatRoutes = require("./routes/chat");
+const journalRoutes = require("./routes/journal");
+const humeRoutes = require("./routes/hume");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -17,6 +19,8 @@ app.get("/health", (req, res) => {
 
 // Routes
 app.use("/api/chat", chatRoutes);
+app.use("/api/journal", journalRoutes);
+app.use("/api/hume", humeRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
